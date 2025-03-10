@@ -1,17 +1,12 @@
 import base64
-import jwt
-from openai import OpenAI
 from flask import Flask, request, jsonify
-from volcenginesdkarkruntime import Ark
-
-import json
-import uuid
-
+from ai.bianxie import bianxie
+from ai.hs import hs_chat
+from ai.tokenManage import get_token, edit_token
 from ai.ali import ali_chat
 from ai.util import generate_token, save_chat_data, decode_token, load_chat_data, markdown_to_html
 
 app = Flask(__name__)
-
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
 
@@ -21,57 +16,63 @@ def initOpenAi():
     model_name = data.get('model_name', '')
     api_key = data.get('api_key', '')
     supplier = data.get('supplier', '')
-    print(model_name, api_key, supplier)
+    # print(model_name, api_key, supplier)
     if not model_name or not api_key or not supplier:
         return jsonify({"error": "model_name, api_key, and supplier are required"}), 400
-    if supplier not in ['alv1', 'hsv3']:
-        return jsonify({"error": "supplier must be either 'alv1' or 'hsv3'"}), 400
+    if supplier not in ['alv1', 'hsv3', 'bianxie']:
+        return jsonify({"error": "supplier must be either 'alv1' or 'hsv3' or 'bianxie'"}), 400
     token = generate_token(model_name, api_key, supplier)
 
     # 返回 token
     return jsonify({"token": token})
 
-#todo TOKEN 管理
+
+# todo TOKEN 管理
 """
     JSON 数据 存储token 记录token 状态 创建时间 使用次数 token 生成uuid
     token
 """
 
 
-
-
-def hs_chat(token, msg, base64_arr, chat_id, chat_data):
+def get_password():
     try:
-        client = Ark(
-            base_url="https://ark.cn-beijing.volces.com/api/v3",
-            api_key=token["api_key"]
-        )
-        messages = chat_data.get("messages", [])
-        if "messages" not in chat_data:
-            chat_data["messages"] = []
-        messages.append({"role": "user", "content": [{"type": "text", "text": msg}]})
-        if base64_arr:
-            image_contents = [
-                {"type": "image_url", "image_url": {"url": base64_str}}
-                for base64_str in base64_arr
-            ]
-            messages[-1]["content"].extend(image_contents)
-            # messages[-1]["content"] += json.dumps(image_contents)
-        print(messages)
-
-        completion = client.chat.completions.create(
-            model=token["model_name"],  # 此处以 deepseek-r1 为例，可按需更换模型名称。
-            messages=messages
-        )
-        if chat_id:
-            chat_data["messages"].append({"role": "assistant", "content": completion.choices[0].message.content})
-            save_chat_data(chat_id, chat_data)
-        return markdown_to_html(completion.choices[0].message.content)
-    except Exception as e:
-        return str(e)
+        with open("./chat_utils/password.txt", "r") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return None
 
 
+def authenticate(password):
+    correct_password = get_password()
+    if correct_password is None:
+        return jsonify({"error": "Password file not found."}), 500
+    if password != correct_password:
+        return jsonify({"error": "the password was reject."}), 401
+    return None
 
+
+@app.get("/getAllTokens")
+def getAllTokens():
+    password = request.args.get("password", "")
+    auth_response = authenticate(password=password)
+    if auth_response:
+        return auth_response
+
+    # 获取所有的token
+    return get_token()
+
+
+@app.post("/setToken")
+def setToken():
+    password = request.args.get("password", "")
+    auth_response = authenticate(password=password)
+    key = request.args.get("key", "")
+    val = request.args.get("val", "")
+    if auth_response:
+        return auth_response
+    if key and val:
+        return edit_token(key, val)
+    return jsonify({"error": "key and val are required"}), 500
 
 
 @app.post("/chat")
@@ -117,6 +118,11 @@ def chat():
         return jsonify({"response": result}), 200
     elif decoded_token["supplier"] == "alv1":
         result = ali_chat(decoded_token, message, files_base64, chat_id, chat_data)
+        if "error" in result:
+            return jsonify({"error": result}), 400
+        return jsonify({"response": result}), 200
+    elif decoded_token["supplier"] == "bianxie":
+        result = bianxie(decoded_token, message, files_base64, chat_id, chat_data)
         if "error" in result:
             return jsonify({"error": result}), 400
         return jsonify({"response": result}), 200

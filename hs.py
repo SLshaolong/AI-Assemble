@@ -1,13 +1,13 @@
-from openai import OpenAI
+from volcenginesdkarkruntime import Ark
+
 from ai.util import save_chat_data, markdown_to_html
 
 
-def ali_chat(token, msg, base64_arr, chat_id, chat_data):
+def hs_chat(token, msg, base64_arr, chat_id, chat_data):
     try:
-        client = OpenAI(
-            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-            api_key=token["api_key"],
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        client = Ark(
+            base_url="https://ark.cn-beijing.volces.com/api/v3",
+            api_key=token["api_key"]
         )
         messages = chat_data.get("messages", [])
         if "messages" not in chat_data:
@@ -31,5 +31,4 @@ def ali_chat(token, msg, base64_arr, chat_id, chat_data):
             save_chat_data(chat_id, chat_data)
         return markdown_to_html(completion.choices[0].message.content)
     except Exception as e:
-        print(e)
         return str(e)

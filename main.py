@@ -5,10 +5,53 @@ from ai.hs import hs_chat
 from ai.tokenManage import get_token, edit_token
 from ai.ali import ali_chat
 from ai.util import generate_token, save_chat_data, decode_token, load_chat_data, markdown_to_html
+from ai.user import UserManager
 
 app = Flask(__name__)
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
+user_manager = UserManager()
+
+@app.post("/user/create")
+def create_user():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    apikey = data.get('apikey')
+    account = data.get('account')
+
+    if not username or not password or not apikey:
+        return jsonify({"error": "username, password and apikey are required"}), 400
+
+    user = user_manager.create_user(username, password, apikey,account)
+    return jsonify({"data": user}), 200
+
+@app.get("/user/list")
+def get_users():
+    users = user_manager.get_all_users()
+    return jsonify({"data": users}), 200
+
+@app.get("/user/<int:user_id>")
+def get_user(user_id):
+    user = user_manager.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"data": user}), 200
+
+@app.put("/user/<int:user_id>")
+def update_user(user_id):
+    data = request.json
+    success = user_manager.update_user(user_id, data)
+    if not success:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"message": "User updated successfully"}), 200
+
+@app.delete("/user/<int:user_id>")
+def delete_user(user_id):
+    success = user_manager.delete_user(user_id)
+    if not success:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"message": "User deleted successfully"}), 200
 
 @app.post("/init_openai")
 def initOpenAi():
@@ -16,12 +59,13 @@ def initOpenAi():
     model_name = data.get('model_name', '')
     api_key = data.get('api_key', '')
     supplier = data.get('supplier', '')
+    text = data.get('text', '')
     # print(model_name, api_key, supplier)
     if not model_name or not api_key or not supplier:
         return jsonify({"error": "model_name, api_key, and supplier are required"}), 400
     if supplier not in ['alv1', 'hsv3', 'bianxie']:
         return jsonify({"error": "supplier must be either 'alv1' or 'hsv3' or 'bianxie'"}), 400
-    token = generate_token(model_name, api_key, supplier)
+    token = generate_token(model_name, api_key, supplier,model_name,text)
 
     # 返回 token
     return jsonify({"token": token})
@@ -53,24 +97,35 @@ def authenticate(password):
 
 @app.get("/getAllTokens")
 def getAllTokens():
-    password = request.args.get("password", "")
-    auth_response = authenticate(password=password)
-    if auth_response:
-        return auth_response
-
-    # 获取所有的token
     return get_token()
 
 
+@app.post("/login")
+def login():
+    data = request.json
+    username = data.get('username', '')
+    password = data.get('password', '')
+
+    if not username or not password:
+        return jsonify({"error": "username and password are required"}), 400
+
+
+    if username =="admin" and password == get_password():
+        return jsonify({"data": {
+            "userId": "001",
+            "username": "admin",
+            "userpermission":"superadmin"
+        }}), 200
+    else:
+        return jsonify({"error": "Invalid username or password"}), 401
+
 @app.post("/setToken")
 def setToken():
-    password = request.args.get("password", "")
-    auth_response = authenticate(password=password)
-    key = request.args.get("key", "")
-    val = request.args.get("val", "")
-    if auth_response:
-        return auth_response
-    if key and val:
+    data = request.json
+    key = data.get('key', '')
+    val = data.get('val', 0)
+
+    if key :
         return edit_token(key, val)
     return jsonify({"error": "key and val are required"}), 500
 

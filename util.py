@@ -1,6 +1,7 @@
 import json
 import time
 import uuid
+from datetime import datetime
 
 import jwt
 import markdown
@@ -43,7 +44,7 @@ def decode_token(token):
         return {"error": "Invalid token"}
 
 
-def generate_token(model_name, api_key, supplier):
+def generate_token(model_name, api_key, supplier,modelname,text):
 
     '''
         生成token
@@ -62,7 +63,7 @@ def generate_token(model_name, api_key, supplier):
 
     # 生成 token
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-    save_token_to_file(token, key)
+    save_token_to_file(token, key,modelname,text)
     return token
 
 
@@ -78,7 +79,7 @@ def markdown_to_html(md_text):
     return html_output
 
 
-def save_token_to_file(token, key):
+def save_token_to_file(token, key,modelname,text):
     # 读取当前文件中的数据
     try:
         with open(f"./chat_utils/token_manage.json", "r", encoding="utf-8") as f:
@@ -104,8 +105,11 @@ def save_token_to_file(token, key):
         "key": key,
         "token": token,
         "time": 0,
-        "generateTime": time.time(),
-        "status": 1
+        "modelname":modelname,
+        "generateTime":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "status": 1,
+        "id": uuid.uuid4().hex,
+        "text":text
     }
 
     # 将新的数据追加到原有数据中

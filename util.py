@@ -1,7 +1,7 @@
 import json
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import jwt
 import markdown
@@ -65,6 +65,68 @@ def generate_token(model_name, api_key, supplier,modelname,text):
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     save_token_to_file(token, key,modelname,text)
     return token
+
+
+def generate_user_token(user_id, username, password):
+    '''
+    生成用户token
+    :param user_id: 用户ID
+    :param username: 用户名
+    :param password: 密码
+    :return: token
+    '''
+    # 设置90天后的过期时间
+    exp_time = datetime.now() + timedelta(days=90)
+    
+    payload = {
+        "user_id": user_id,
+        "username": username,
+        "password": password,
+        "exp": exp_time.timestamp()
+    }
+    
+    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return token
+
+def verify_user_token(token):
+    '''
+    验证用户token
+    :param token: 用户token
+    :return: 成功返回user_id,失败返回错误信息
+    '''
+    try:
+        # 解码token
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = decoded.get("user_id")
+        
+        # 读取用户文件
+        try:
+            with open("./chat_utils/user.json", "r") as f:
+                users = json.load(f)
+        except:
+            return {"error": "User file not found or invalid"}
+            
+        # 检查用户状态
+        user = None
+        for u in users:
+            if u.get("id") == user_id and u.get("status") == 1:
+                user = u
+                break
+                
+        if not user:
+            return {"error": "User not found or inactive"}
+            
+        # 检查token是否过期
+        exp_time = decoded.get("exp")
+        if datetime.fromtimestamp(exp_time) < datetime.now():
+            return {"error": "Token expired"}
+            
+        return {"user_id": user_id}
+        
+    except jwt.ExpiredSignatureError:
+        return {"error": "Token expired"}
+    except jwt.InvalidTokenError:
+        return {"error": "Invalid token"}
 
 
 def save_chat_data(chat_id, chat_data):

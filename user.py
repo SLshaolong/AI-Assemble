@@ -1,14 +1,14 @@
 '''
 Date: 2025-03-11 10:58:08
 LastEditors: shaolong sl3037302304@gmail.com
-LastEditTime: 2025-03-11 15:23:33
+LastEditTime: 2025-03-11 15:56:05
 FilePath: /ai/user.py
 Description: from shaolong
 '''
 import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class UserManager:
     def __init__(self):
@@ -45,11 +45,11 @@ class UserManager:
             return []
         return []
         
-    def create_user(self, username, password, apikey,account):
+    def create_user(self, username, password, apikey, account):
         user = {
             'id': len(self.users) + 1,
             'username': username,
-            "account":account,
+            "account": account,
             'password': password,
             'status': 1,  # 1-active, 0-inactive
             'apikeys': apikey,
@@ -98,3 +98,14 @@ class UserManager:
             user_info['tokens'] = self._get_tokens_by_apikeys(user['apikeys'])
             users_with_tokens.append(user_info)
         return users_with_tokens
+
+    def login_user(self, username, password):
+        for user in self.users:
+            if user['username'] == username and user['password'] == password:
+                user_info = user.copy()
+                user_info['tokens'] = self._get_tokens_by_apikeys(user['apikeys'])
+                # 设置token过期时间为3个月
+                expiration_time = datetime.now() + timedelta(days=90)
+                user_info['token_expiration'] = expiration_time.strftime('%Y-%m-%d %H:%M:%S')
+                return user_info
+        return None

@@ -1,3 +1,10 @@
+'''
+Date: 2025-03-10 09:51:24
+LastEditors: shaolong sl3037302304@gmail.com
+LastEditTime: 2025-03-12 17:06:15
+FilePath: /ai/tokenManage.py
+Description: from shaolong
+'''
 import json
 
 import ai.chat_utils
@@ -36,3 +43,28 @@ def edit_token(key,status):
     except json.JSONDecodeError:
         return {"error": "Invalid JSON format."}, 500
 
+
+def get_token_by_key(key):
+    """
+    根据key获取token数据
+    :param key: token的key
+    :return: 返回token完整数据或错误信息
+    """
+    file_path = './chat_utils/token_manage.json'
+    
+    try:
+        # 读取JSON文件
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        # 查找对应key的token数据
+        for item in data:
+            if item.get("key") == key:
+                return {"success": True, "data": item}
+                
+        return {"error": "Token not found"}, 404
+        
+    except FileNotFoundError:
+        return {"error": "Token file not found"}, 500
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON format"}, 500

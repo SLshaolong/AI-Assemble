@@ -1,13 +1,12 @@
 '''
 Date: 2025-03-11 10:58:08
 LastEditors: shaolong sl3037302304@gmail.com
-LastEditTime: 2025-03-11 15:56:05
+LastEditTime: 2025-03-13 15:22:57
 FilePath: /ai/user.py
 Description: from shaolong
 '''
 import json
 import os
-import time
 from datetime import datetime, timedelta
 
 class UserManager:
@@ -78,6 +77,9 @@ class UserManager:
     def update_user(self, user_id, updates):
         for user in self.users:
             if user['id'] == user_id:
+                # 将apikeys数组转换为字符串
+                if 'apikey' in updates:
+                    updates['apikeys'] = updates['apikey']
                 user.update(updates)
                 self._save_users()
                 return True

@@ -6,8 +6,6 @@ FilePath: /ai/tokenManage.py
 Description: from shaolong
 '''
 import json
-
-import ai.chat_utils
 def get_token():
     with open('./chat_utils/token_manage.json', 'r') as f:
         return json.loads(f.read())

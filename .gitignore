@@ -1,0 +1,6 @@
+./chat_utils/token_manage.json
+./chat_utils
+.DS_Store
+.gitignore
+node_modules
+dist

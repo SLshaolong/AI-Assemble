@@ -1,9 +1,17 @@
+'''
+Date: 2025-03-12 10:38:47
+LastEditors: shaolong sl3037302304@gmail.com
+LastEditTime: 2025-03-13 15:58:10
+FilePath: /ai/chat.py
+Description: from shaolong
+'''
 from openai import OpenAI
-from ai.util import save_chat_data, markdown_to_html
+from util import save_chat_data, markdown_to_html
 class ChatBaseUrls:
     ALI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     HS_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
     BIANXIE_BASE_URL = "https://api.bianxie.ai/v1"
+    HUNYUAN_BASE_URL = "https://api.hunyuan.cloud.tencent.com/v1"
 
 
 def use_chat(url,token, msg, base64_arr, chat_id, chat_data, stream=False):

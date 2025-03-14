@@ -3,12 +3,11 @@ import json
 import os
 
 from flask import Flask, request, jsonify, Response
-from ai.tokenManage import get_token, edit_token, get_token_by_key
-from ai.util import save_chat_data, decode_token, load_chat_data, markdown_to_html, generate_token, generate_user_token, \
+from tokenManage import get_token, edit_token, get_token_by_key
+from util import save_chat_data, decode_token, load_chat_data, generate_token, generate_user_token, \
     verify_user_token
-from ai.user import UserManager
-from datetime import datetime, timedelta
-from ai.chat import ChatBaseUrls, use_chat
+from user import UserManager
+from chat import ChatBaseUrls, use_chat
 
 app = Flask(__name__)
 MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -71,8 +70,8 @@ def initOpenAi():
     text = data.get('text', '')
     if not model_name or not api_key or not supplier:
         return jsonify({"error": "model_name, api_key, and supplier are required"}), 400
-    if supplier not in ['alv1', 'hsv3', 'bianxie']:
-        return jsonify({"error": "supplier must be either 'alv1' or 'hsv3' or 'bianxie'"}), 400
+    if supplier not in ['alv1', 'hsv3', 'tencent','bianxie']:
+        return jsonify({"error": "supplier must be either 'alv1' or 'hsv3' or 'tencent' or 'bianxie'"}), 400
     token = generate_token(model_name, api_key, supplier, model_name, text)
 
     return jsonify({"token": token})
@@ -202,6 +201,12 @@ def chat():
         if "error" in result:
             return jsonify({"error": result}), 400
         return jsonify({"response": result}), 200
+    elif decoded_token["supplier"] == "tencent":
+        result = use_chat(ChatBaseUrls.HUNYUAN_BASE_URL, decoded_token, message, files_base64, chat_id, chat_data,
+                          stream=False)
+        if "error" in result:
+            return jsonify({"error": result}), 400
+        return jsonify({"response": result}), 200
     return jsonify({"response": f"Message received: {message}"})
 
 
@@ -248,8 +253,10 @@ def webchat():
         supplier_urls = {
             "hsv3": ChatBaseUrls.HS_BASE_URL,
             "alv1": ChatBaseUrls.ALI_BASE_URL, 
-            "bianxie": ChatBaseUrls.BIANXIE_BASE_URL
+            "bianxie": ChatBaseUrls.BIANXIE_BASE_URL,
+            "tencent": ChatBaseUrls.HUNYUAN_BASE_URL
         }
+
         
         # 获取当前供应商的URL
         base_url = supplier_urls.get(use_token["supplier"])
@@ -266,15 +273,25 @@ def webchat():
             chat_data,
             stream=True
         )
+        # print('data')
         print(compile_data)
 
         # 处理流式响应
         msg = msg or ""
         for chunk in compile_data.get("message", []):
+            try:
+                if chunk.choices[0] and chunk.choices[0].delta.reasoning_content:
+                    content = chunk.choices[0].delta.reasoning_content
+                    yield '<span class="text-info" style="color: red;font-size: 12px;background-color: #545454;">' + content + "</span>"
+
+            except BaseException as e:
+                pass
+                # print(e)
             if chunk.choices[0] and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
                 msg += content
                 yield content
+
 
         # 保存聊天记录
         if use_chat_id:
@@ -322,6 +339,7 @@ def get_chat_history():
                             "chat_id": chat_id,
                             "name": name
                         })
+        chat_files.sort(key=lambda x: int(x["chat_id"]), reverse=True)
                         
         return jsonify({"data": chat_files,"code":200}), 200
         

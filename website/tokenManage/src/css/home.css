@@ -1,0 +1,76 @@
+/* 主布局样式 */
+.ant-layout {
+  max-height: 100vh !important;
+  min-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* 头部样式 */
+.ant-layout-header {
+  background: #fff;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+/* 侧边栏样式 */
+.ant-layout-sider {
+  background: #fff;
+  margin-top: 25px;
+  box-sizing: border-box;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  height: calc(100vh - 112px);
+}
+
+.ant-menu {
+  border-right: none;
+}
+
+.ant-menu-item {
+  margin: 4px 0;
+}
+
+.ant-menu-item:hover {
+  color: #1890ff;
+}
+
+/* 内容区域样式 */
+.ant-layout-content {
+  background: #fff;
+  margin: 24px;
+  padding: 24px;
+  min-height: 280px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 用户信息样式 */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-info span {
+  color: #666;
+}
+
+/* 退出按钮样式 */
+.ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
